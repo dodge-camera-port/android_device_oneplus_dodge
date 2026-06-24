@@ -21,9 +21,6 @@ namespace_imports = [
     'hardware/qcom-caf/sm8750',
     'vendor/oneplus/sm8750-common',
     'vendor/qcom/opensource/commonsys-intf/display',
-    # libAlgoProcess.so gets a DT_NEEDED on libapsfixup (the APS turbo fix interposer), which is
-    # defined in the device/oneplus/dodge namespace -- import it so the blob can resolve it.
-    'device/oneplus/dodge',
 ]
 
 blob_fixups: blob_fixups_user_type = {
@@ -38,16 +35,7 @@ blob_fixups: blob_fixups_user_type = {
     'odm/firmware/fastchg/23821/charging_hyper_mode_config.txt': blob_fixup()
         .regex_replace(r"(PROJECT:=)23893", r"\g<1>23821"),
     'odm/lib64/libAlgoProcess.so': blob_fixup()
-        .replace_needed('android.hardware.graphics.common-V5-ndk.so', 'android.hardware.graphics.common-V7-ndk.so')
-        # APS turbo soft/GREEN/crash is now fixed at RUNTIME by libapsfixup.so
-        # (device/oneplus/dodge/apsfixup), loaded via this DT_NEEDED. Root cause: the port's
-        # gralloc/IMapper reports a wrong plane layout for the 4096x3072 P010 capture-output
-        # buffer, so the byte-identical ArcSoft/Algo blobs build a garbage chroma plane. The
-        # interposer corrects, at runtime: (1) ARC_Turbo_RAW_Process output struct chroma plane
-        # ptr = luma + Ysize (was align_up(luma,0) = 4GB), (2) chroma pitch = Y stride (was 0),
-        # (3) p010LSB2MSBNeon length so w4*w5*1.5 == buffer (full Y+UV, no overrun). Turbo runs
-        # normally -> sharp + correct color.
-        .add_needed('libapsfixup.so'),
+        .replace_needed('android.hardware.graphics.common-V5-ndk.so', 'android.hardware.graphics.common-V7-ndk.so'),
     (
         'odm/lib64/libAncHumanSegFigureFusion.so',
         'odm/lib64/libEIS.so',
