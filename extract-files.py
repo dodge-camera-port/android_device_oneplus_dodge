@@ -16,12 +16,73 @@ from extract_utils.main import (
     ExtractUtilsModule,
 )
 
+import json
+from Crypto.Cipher import AES
+
 namespace_imports = [
     'hardware/oplus',
     'hardware/qcom-caf/sm8750',
     'vendor/oneplus/sm8750-common',
     'vendor/qcom/opensource/commonsys-intf/display',
 ]
+
+# Oplus camera config decryption & patching
+KEY = bytes.fromhex("6f2170406c247525535e4326412a4d28")
+MAGIC = b"\x01\x01"
+HEADER_LEN = 4
+FOOTER_LEN = 4
+
+def decrypt_oplus_config(blob: bytes) -> bytes:
+    """Decrypt an encrypted Oplus camera config blob (must start with 01 01)."""
+    ct = blob[HEADER_LEN:len(blob) - FOOTER_LEN]
+    pt = AES.new(KEY, AES.MODE_ECB).decrypt(ct)
+    pad_len = pt[-1]
+    if 1 <= pad_len <= 16:
+        pt = pt[:-pad_len]
+    return pt
+
+def get_plain_config_bytes(file_path: str) -> bytes:
+    """
+    Read the config file from disk. If it starts with the encryption magic,
+    decrypt it; otherwise return the raw bytes (already plaintext).
+    """
+    with open(file_path, 'rb') as f:
+        raw = f.read()
+    if raw[:2] == MAGIC:
+        return decrypt_oplus_config(raw)
+    return raw
+
+def update_vendor_tag(ctx, file, file_path, vendor_tag, new_value, type_str="Byte", count="1"):
+    """
+    Generic helper: get plaintext config, find or add a vendor tag, set its Value,
+    and write back as plaintext JSON.
+    """
+    plain_bytes = get_plain_config_bytes(file_path)
+    config = json.loads(plain_bytes.decode('utf-8'))
+
+    found = False
+    for entry in config:
+        if entry.get("VendorTag") == vendor_tag:
+            entry["Value"] = new_value
+            entry["Type"] = type_str
+            entry["Count"] = count
+            found = True
+            break
+
+    if not found:
+        config.append({
+            "VendorTag": vendor_tag,
+            "Type": type_str,
+            "Count": count,
+            "Value": new_value
+        })
+
+    with open(file_path, 'w') as f:
+        json.dump(config, f, indent=2, separators=(',', ': '))
+
+# Disable "Liquid Glass" design
+def set_cross_window_blur_zero(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.camera.support.cross.window.blur", "0")
 
 blob_fixups: blob_fixups_user_type = {
     'odm/etc/init/init.camera_process.rc': blob_fixup()
@@ -89,6 +150,8 @@ blob_fixups: blob_fixups_user_type = {
         .replace_needed('libui.so', 'libui-stock.so'),
     'vendor/lib64/libui-stock.so': blob_fixup()
         .replace_needed('android.hardware.graphics.common-V5-ndk.so', 'android.hardware.graphics.common-V7-ndk.so'),
+    'odm/etc/camera/config/oplus_camera_config': blob_fixup()
+        .call(set_cross_window_blur_zero),
 }  # fmt: skip
 
 module = ExtractUtilsModule(
