@@ -84,6 +84,37 @@ def update_vendor_tag(ctx, file, file_path, vendor_tag, new_value, type_str="Byt
 def set_cross_window_blur_zero(ctx, file, file_path, *args, **kwargs):
     update_vendor_tag(ctx, file, file_path, "com.oplus.camera.support.cross.window.blur", "0")
 
+# Unlock 120fps
+def set_120fps_guide_support(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.120fps.guide.support", "1")
+
+def set_slowvideo_wide_120fps_not_support(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.slowvideo.wide.120fps.not.support", "1")
+
+def set_video_1080p_120fps_support(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.video.1080p.120fps.support", "1")
+
+def set_video_1080p_120fps_zoom_range(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.video.1080p.120fps.zoom.range", "1,3.5", "Float", "2")
+
+def set_video_1080p120fps_max_zoom_list(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.video.1080p120fps.max.zoom.list", "1,2.9,10", "Float", "3")
+
+def set_video_120fps_camera_main_only_support(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.video.120fps.camera.main.only.support", "1")
+
+def set_video_4k_120fps_support(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.video.4k.120fps.support", "1")
+
+def set_video_4k_120fps_zoom_range(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.video.4k.120fps.zoom.range", "1,3.5", "Float", "2")
+
+def set_video_4k120fps_max_zoom_list(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.video.4k120fps.max.zoom.list", "1,2.9,10", "Float", "3")
+
+def set_video_dv_120fps_support(ctx, file, file_path, *args, **kwargs):
+    update_vendor_tag(ctx, file, file_path, "com.oplus.feature.video.dv.120fps.support", "1")
+
 blob_fixups: blob_fixups_user_type = {
     'odm/etc/init/init.camera_process.rc': blob_fixup()
         .regex_replace('    delete_recursion', '    #delete_recursion'),
@@ -151,7 +182,17 @@ blob_fixups: blob_fixups_user_type = {
     'vendor/lib64/libui-stock.so': blob_fixup()
         .replace_needed('android.hardware.graphics.common-V5-ndk.so', 'android.hardware.graphics.common-V7-ndk.so'),
     'odm/etc/camera/config/oplus_camera_config': blob_fixup()
-        .call(set_cross_window_blur_zero),
+        .call(set_cross_window_blur_zero)
+        .call(set_120fps_guide_support)
+        .call(set_slowvideo_wide_120fps_not_support)
+        .call(set_video_1080p_120fps_support)
+        .call(set_video_1080p_120fps_zoom_range)
+        .call(set_video_1080p120fps_max_zoom_list)
+        .call(set_video_120fps_camera_main_only_support)
+        .call(set_video_4k_120fps_support)
+        .call(set_video_4k_120fps_zoom_range)
+        .call(set_video_4k120fps_max_zoom_list)
+        .call(set_video_dv_120fps_support),
 }  # fmt: skip
 
 module = ExtractUtilsModule(
